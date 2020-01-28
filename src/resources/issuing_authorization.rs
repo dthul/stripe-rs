@@ -85,7 +85,7 @@ pub struct IssuingAuthorization {
 
     pub request_history: Vec<IssuingAuthorizationRequest>,
 
-    /// One of `pending`, `reversed`, or `closed`.
+    /// One of `closed`, `pending`, or `reversed`.
     pub status: String,
 
     pub transactions: Vec<IssuingTransaction>,
@@ -146,7 +146,7 @@ pub struct IssuingAuthorizationVerificationData {
     /// One of `match`, `mismatch`, or `not_provided`.
     pub address_zip_check: IssuingAuthorizationCheck,
 
-    /// One of `success`, `failure`, `exempt`, or `none`.
+    /// One of `exempt`, `failure`, `none`, or `success`.
     pub authentication: String,
 
     /// One of `match`, `mismatch`, or `not_provided`.

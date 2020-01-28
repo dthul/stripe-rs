@@ -21,10 +21,6 @@ pub struct Customer {
     /// Unique identifier for the object.
     pub id: CustomerId,
 
-    /// This field has been renamed to `balance` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub account_balance: Option<i64>,
-
     /// The customer's address.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address: Option<Address>,
@@ -249,10 +245,6 @@ pub struct TaxInfoVerification {
 /// The parameters for `Customer::create`.
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct CreateCustomer<'a> {
-    /// This field has been renamed to `balance` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub account_balance: Option<i64>,
-
     /// The customer's address.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address: Option<Address>,
@@ -344,7 +336,6 @@ pub struct CreateCustomer<'a> {
 impl<'a> CreateCustomer<'a> {
     pub fn new() -> Self {
         CreateCustomer {
-            account_balance: Default::default(),
             address: Default::default(),
             balance: Default::default(),
             coupon: Default::default(),
@@ -420,10 +411,6 @@ impl<'a> ListCustomers<'a> {
 /// The parameters for `Customer::update`.
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct UpdateCustomer<'a> {
-    /// This field has been renamed to `balance` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub account_balance: Option<i64>,
-
     /// The customer's address.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address: Option<Address>,
@@ -535,7 +522,6 @@ pub struct UpdateCustomer<'a> {
 impl<'a> UpdateCustomer<'a> {
     pub fn new() -> Self {
         UpdateCustomer {
-            account_balance: Default::default(),
             address: Default::default(),
             balance: Default::default(),
             coupon: Default::default(),
@@ -656,20 +642,26 @@ impl std::fmt::Display for CustomerTaxExemptFilter {
 #[serde(rename_all = "snake_case")]
 pub enum TaxIdDataType {
     AuAbn,
+    ChVat,
     EuVat,
     InGst,
+    MxRfc,
     NoVat,
     NzGst,
+    ZaVat,
 }
 
 impl TaxIdDataType {
     pub fn as_str(self) -> &'static str {
         match self {
             TaxIdDataType::AuAbn => "au_abn",
+            TaxIdDataType::ChVat => "ch_vat",
             TaxIdDataType::EuVat => "eu_vat",
             TaxIdDataType::InGst => "in_gst",
+            TaxIdDataType::MxRfc => "mx_rfc",
             TaxIdDataType::NoVat => "no_vat",
             TaxIdDataType::NzGst => "nz_gst",
+            TaxIdDataType::ZaVat => "za_vat",
         }
     }
 }

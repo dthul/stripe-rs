@@ -35,7 +35,7 @@ pub struct TaxId {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub livemode: Option<bool>,
 
-    /// Type of the tax ID, one of `au_abn`, `eu_vat`, `in_gst`, `no_vat`, `nz_gst`, or `unknown`.
+    /// Type of the tax ID, one of `au_abn`, `ch_vat`, `eu_vat`, `in_gst`, `mx_rfc`, `no_vat`, `nz_gst`, `za_vat`, or `unknown`.
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub type_: Option<TaxIdType>,
@@ -77,22 +77,28 @@ pub struct TaxIdVerification {
 #[serde(rename_all = "snake_case")]
 pub enum TaxIdType {
     AuAbn,
+    ChVat,
     EuVat,
     InGst,
+    MxRfc,
     NoVat,
     NzGst,
     Unknown,
+    ZaVat,
 }
 
 impl TaxIdType {
     pub fn as_str(self) -> &'static str {
         match self {
             TaxIdType::AuAbn => "au_abn",
+            TaxIdType::ChVat => "ch_vat",
             TaxIdType::EuVat => "eu_vat",
             TaxIdType::InGst => "in_gst",
+            TaxIdType::MxRfc => "mx_rfc",
             TaxIdType::NoVat => "no_vat",
             TaxIdType::NzGst => "nz_gst",
             TaxIdType::Unknown => "unknown",
+            TaxIdType::ZaVat => "za_vat",
         }
     }
 }

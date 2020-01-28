@@ -1674,9 +1674,10 @@ fn check_object_doc_url(object: &str) -> Option<String> {
             if text.contains("<title>Stripe API Reference") && text.contains("object</title>") {
                 fs::write(&cache_file, text.as_bytes()).unwrap();
                 return Some(doc_url);
-            } else {
-                panic!("fatal: documentation response didn't match the expected format.");
             }
+            // } else {
+            //     eprintln!("fatal: documentation response didn't match the expected format: {}", doc_url);
+            // }
         }
     }
     eprintln!("warning: could not determine doc_url for object `{}`", object);

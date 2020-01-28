@@ -114,7 +114,7 @@ pub struct PersonVerification {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<String>,
 
-    /// One of `scan_name_mismatch`, `failed_keyed_identity`, or `failed_other`.
+    /// One of `document_address_mismatch`, `document_dob_mismatch`, `document_duplicate_type`, `document_id_number_mismatch`, `document_name_mismatch`, `document_nationality_mismatch`, `failed_keyed_identity`, or `failed_other`.
     ///
     /// A machine-readable code specifying the verification state for the person.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -141,7 +141,7 @@ pub struct PersonVerificationDocument {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<String>,
 
-    /// One of `document_corrupt`, `document_failed_copy`, `document_not_readable`, `document_failed_greyscale`, `document_not_uploaded`, `document_id_type_not_supported`, `document_id_country_not_supported`, `document_failed_other`, `document_fraudulent`, `document_invalid`, `document_manipulated`, `document_missing_back`, `document_missing_front`, `document_photo_mismatch`, `document_too_large`, or `document_failed_test_mode`.
+    /// One of `document_corrupt`, `document_country_not_supported`, `document_expired`, `document_failed_copy`, `document_failed_other`, `document_failed_test_mode`, `document_fraudulent`, `document_failed_greyscale`, `document_incomplete`, `document_invalid`, `document_manipulated`, `document_missing_back`, `document_missing_front`, `document_not_readable`, `document_not_uploaded`, `document_photo_mismatch`, `document_too_large`, or `document_type_not_supported`.
     ///
     /// A machine-readable code specifying the verification state for this document.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -154,12 +154,6 @@ pub struct PersonVerificationDocument {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PersonRelationship {
-    /// Whether the person opened the account.
-    ///
-    /// This person provides information about themselves, and general information about the account.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub account_opener: Option<bool>,
-
     /// Whether the person is a director of the account's legal entity.
     ///
     /// Currently only required for accounts in the EU.
@@ -178,6 +172,14 @@ pub struct PersonRelationship {
     /// The percent owned by the person of the account's legal entity.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub percent_ownership: Option<f64>,
+
+    /// Whether the person is authorized as the primary representative of the account.
+    ///
+    /// This is the person nominated by the business to provide information about themselves, and general information about the account.
+    /// There can only be one representative at any given time.
+    /// At the time the account is created, this person should be set to the person responsible for opening the account.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub representative: Option<bool>,
 
     /// The person's title (e.g., CEO, Support Engineer).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -201,8 +203,9 @@ pub struct PersonRequirements {
     /// These fields need to be collected to enable payouts for the person's account.
     pub past_due: Vec<String>,
 
-    /// Additional fields that may be required depending on the results of verification or review for provided requirements.
+    /// Fields that may become required depending on the results of verification or review.
     ///
-    /// If any of these fields become required, they appear in `currently_due` or `past_due`.
+    /// An empty array unless an asynchronous verification is pending.
+    /// If verification fails, the fields in this array become required and move to `currently_due` or `past_due`.
     pub pending_verification: Vec<String>,
 }

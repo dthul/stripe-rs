@@ -150,6 +150,8 @@ mod person;
 #[cfg(feature = "connect")]
 mod recipient;
 #[cfg(feature = "connect")]
+mod tax_deducted_at_source;
+#[cfg(feature = "connect")]
 mod topup;
 #[cfg(feature = "connect")]
 mod transfer;
@@ -169,6 +171,8 @@ pub use self::fee_refund::*;
 pub use self::person::*;
 #[cfg(feature = "connect")]
 pub use self::recipient::*;
+#[cfg(feature = "connect")]
+pub use self::tax_deducted_at_source::*;
 #[cfg(feature = "connect")]
 pub use self::topup::*;
 #[cfg(feature = "connect")]

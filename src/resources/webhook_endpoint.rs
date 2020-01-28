@@ -36,7 +36,7 @@ pub struct WebhookEndpoint {
 
     /// The list of events to enable for this endpoint.
     ///
-    /// You may specify `['*']` to enable all events.
+    /// `['*']` indicates that all events are enabled, except those that require explicit selection.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled_events: Option<Vec<EventFilter>>,
 
@@ -128,7 +128,7 @@ pub struct CreateWebhookEndpoint<'a> {
 
     /// The list of events to enable for this endpoint.
     ///
-    /// You may specify `['*']` to enable all events.
+    /// You may specify `['*']` to enable all events, except those that require explicit selection.
     pub enabled_events: Vec<EventFilter>,
 
     /// Specifies which fields in the response should be expanded.
@@ -199,7 +199,7 @@ pub struct UpdateWebhookEndpoint<'a> {
 
     /// The list of events to enable for this endpoint.
     ///
-    /// You may specify `['*']` to enable all events.
+    /// You may specify `['*']` to enable all events, except those that require explicit selection.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled_events: Option<Vec<EventFilter>>,
 
@@ -393,6 +393,8 @@ pub enum EventFilter {
     OrderReturnCreated,
     #[serde(rename = "payment_intent.amount_capturable_updated")]
     PaymentIntentAmountCapturableUpdated,
+    #[serde(rename = "payment_intent.canceled")]
+    PaymentIntentCanceled,
     #[serde(rename = "payment_intent.created")]
     PaymentIntentCreated,
     #[serde(rename = "payment_intent.payment_failed")]
@@ -455,6 +457,8 @@ pub enum EventFilter {
     ReviewClosed,
     #[serde(rename = "review.opened")]
     ReviewOpened,
+    #[serde(rename = "setup_intent.canceled")]
+    SetupIntentCanceled,
     #[serde(rename = "setup_intent.created")]
     SetupIntentCreated,
     #[serde(rename = "setup_intent.setup_failed")]
@@ -611,6 +615,7 @@ impl EventFilter {
             EventFilter::PaymentIntentAmountCapturableUpdated => {
                 "payment_intent.amount_capturable_updated"
             }
+            EventFilter::PaymentIntentCanceled => "payment_intent.canceled",
             EventFilter::PaymentIntentCreated => "payment_intent.created",
             EventFilter::PaymentIntentPaymentFailed => "payment_intent.payment_failed",
             EventFilter::PaymentIntentSucceeded => "payment_intent.succeeded",
@@ -644,6 +649,7 @@ impl EventFilter {
             EventFilter::ReportingReportTypeUpdated => "reporting.report_type.updated",
             EventFilter::ReviewClosed => "review.closed",
             EventFilter::ReviewOpened => "review.opened",
+            EventFilter::SetupIntentCanceled => "setup_intent.canceled",
             EventFilter::SetupIntentCreated => "setup_intent.created",
             EventFilter::SetupIntentSetupFailed => "setup_intent.setup_failed",
             EventFilter::SetupIntentSucceeded => "setup_intent.succeeded",

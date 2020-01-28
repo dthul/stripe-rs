@@ -135,11 +135,11 @@ impl Account {
         client.post_form(&format!("/accounts/{}", id), &params)
     }
 
-    /// With [Connect](https://stripe.com/docs/connect), you may delete Custom accounts you manage.
+    /// With [Connect](https://stripe.com/docs/connect), you can delete Custom or Express accounts you manage.
     ///
-    /// Custom accounts created using test-mode keys can be deleted at any time.
+    /// Accounts created using test-mode keys can be deleted at any time.
     ///
-    /// Custom accounts created using live-mode keys may only be deleted once all balances are zero.  If you are looking to close your own account, use the [data tab in your account settings](https://dashboard.stripe.com/account/data) instead.
+    /// Accounts created using live-mode keys can only be deleted once all balances are zero.  If you want to delete your own account, use the [data tab in your account settings](https://dashboard.stripe.com/account/data) instead.
     pub fn delete(client: &Client, id: &AccountId) -> Response<Deleted<AccountId>> {
         client.delete(&format!("/accounts/{}", id))
     }
@@ -196,6 +196,10 @@ pub struct BusinessProfile {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AccountCapabilities {
+    /// The status of the card issuing capability of the account, or whether you can use Issuing to distribute funds on cards.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub card_issuing: Option<AccountCapabilitiesCardIssuing>,
+
     /// The status of the card payments capability of the account, or whether the account can directly process credit and debit card charges.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub card_payments: Option<CapabilityStatus>,
@@ -241,9 +245,10 @@ pub struct AccountRequirements {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub past_due: Option<Vec<String>>,
 
-    /// Additional fields that may be required depending on the results of verification or review for provided requirements.
+    /// Fields that may become required depending on the results of verification or review.
     ///
-    /// If any of these fields become required, they appear in `currently_due` or `past_due`.
+    /// An empty array unless an asynchronous verification is pending.
+    /// If verification fails, the fields in this array become required and move to `currently_due` or `past_due`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pending_verification: Option<Vec<String>>,
 }
@@ -544,7 +549,7 @@ pub struct CreateAccount<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
 
-    /// The set of capabilities you want to unlock for this account (US only).
+    /// The set of capabilities you want to unlock for this account.
     ///
     /// Each capability will be inactive until you have provided its specific requirements and Stripe has verified them.
     /// An account may have some of its requested capabilities be active and some be inactive.
@@ -692,7 +697,7 @@ pub struct UpdateAccount<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
 
-    /// The set of capabilities you want to unlock for this account (US only).
+    /// The set of capabilities you want to unlock for this account.
     ///
     /// Each capability will be inactive until you have provided its specific requirements and Stripe has verified them.
     /// An account may have some of its requested capabilities be active and some be inactive.
@@ -968,6 +973,37 @@ pub struct TransferScheduleParams {
 pub enum ExternalAccount {
     BankAccount(BankAccount),
     Card(Card),
+}
+
+/// An enum representing the possible values of an `AccountCapabilities`'s `card_issuing` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum AccountCapabilitiesCardIssuing {
+    Active,
+    Inactive,
+    Pending,
+}
+
+impl AccountCapabilitiesCardIssuing {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            AccountCapabilitiesCardIssuing::Active => "active",
+            AccountCapabilitiesCardIssuing::Inactive => "inactive",
+            AccountCapabilitiesCardIssuing::Pending => "pending",
+        }
+    }
+}
+
+impl AsRef<str> for AccountCapabilitiesCardIssuing {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for AccountCapabilitiesCardIssuing {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
 }
 
 /// An enum representing the possible values of an `AccountCapabilities`'s `transfers` field.

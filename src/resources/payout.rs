@@ -176,7 +176,7 @@ pub struct CreatePayout<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub method: Option<PayoutMethod>,
 
-    /// The source balance to draw this payout from.
+    /// The balance type of your Stripe balance to draw this payout from.
     ///
     /// Balances for different payment sources are kept separately.
     /// You can find the amounts with the balances API.

@@ -6,37 +6,24 @@ use crate::config::{Client, Response};
 use crate::ids::{CustomerId, SubscriptionScheduleId};
 use crate::params::{Expand, Expandable, List, Metadata, Object, RangeQuery, Timestamp};
 use crate::resources::{
-    CollectionMethod, Coupon, Customer, PaymentMethod, Plan, PlanInterval, Scheduled, Subscription,
+    CollectionMethod, Coupon, Customer, PaymentMethod, Plan, Scheduled, Subscription,
     SubscriptionBillingThresholds, SubscriptionItemBillingThresholds, TaxRate,
 };
 use serde_derive::{Deserialize, Serialize};
 
 /// The resource representing a Stripe "SubscriptionSchedule".
+///
+/// For more details see [https://stripe.com/docs/api/subscription_schedules/object](https://stripe.com/docs/api/subscription_schedules/object).
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SubscriptionSchedule {
     /// Unique identifier for the object.
     pub id: SubscriptionScheduleId,
-
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
-
-    /// Define thresholds at which an invoice will be sent, and the subscription advanced to a new billing period.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_thresholds: Option<SubscriptionBillingThresholds>,
 
     /// Time at which the subscription schedule was canceled.
     ///
     /// Measured in seconds since the Unix epoch.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canceled_at: Option<Timestamp>,
-
-    /// Either `charge_automatically`, or `send_invoice`.
-    ///
-    /// When charging automatically, Stripe will attempt to pay the underlying subscription at the end of each billing cycle using the default source attached to the customer.
-    /// When sending an invoice, Stripe will email your customer an invoice with payment instructions.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub collection_method: Option<CollectionMethod>,
 
     /// Time at which the subscription schedule was completed.
     ///
@@ -56,20 +43,10 @@ pub struct SubscriptionSchedule {
     /// ID of the customer who owns the subscription schedule.
     pub customer: Expandable<Customer>,
 
-    /// ID of the default payment method for the subscription schedule.
-    ///
-    /// It must belong to the customer associated with the subscription schedule.
-    /// If not set, invoices will use the default payment method in the customer's invoice settings.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub default_payment_method: Option<Expandable<PaymentMethod>>,
+    pub default_settings: SubscriptionSchedulesResourceDefaultSettings,
 
     /// Behavior of the subscription schedule and underlying subscription when it ends.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_behavior: Option<SubscriptionScheduleEndBehavior>,
-
-    /// The subscription schedule's default invoice settings.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub invoice_settings: Option<SubscriptionScheduleInvoiceSettings>,
+    pub end_behavior: SubscriptionScheduleEndBehavior,
 
     /// Has the value `true` if the object exists in live mode or the value `false` if the object exists in test mode.
     pub livemode: bool,
@@ -92,14 +69,6 @@ pub struct SubscriptionSchedule {
     /// ID of the subscription once managed by the subscription schedule (if it is released).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub released_subscription: Option<String>,
-
-    /// Behavior of the subscription schedule and underlying subscription when it ends.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub renewal_behavior: Option<SubscriptionScheduleRenewalBehavior>,
-
-    /// Interval and duration at which the subscription schedule renews for when it ends if `renewal_behavior` is `renew`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub renewal_interval: Option<SubscriptionScheduleRenewalInterval>,
 
     /// Possible values are `not_started`, `active`, `completed`, `released`, and `canceled`.
     pub status: SubscriptionScheduleStatus,
@@ -240,24 +209,8 @@ pub struct SubscriptionScheduleConfigurationItem {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SubscriptionScheduleRenewalInterval {
-    /// Interval at which to renew the subscription schedule for when it ends.
-    pub interval: PlanInterval,
-
-    /// Number of intervals to renew the subscription schedule for when it ends.
-    pub length: i64,
-}
-
-/// The parameters for `SubscriptionSchedule::create`.
-#[derive(Clone, Debug, Serialize, Default)]
-pub struct CreateSubscriptionSchedule<'a> {
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
-
+pub struct SubscriptionSchedulesResourceDefaultSettings {
     /// Define thresholds at which an invoice will be sent, and the subscription advanced to a new billing period.
-    ///
-    /// Pass an empty string to remove previously-defined thresholds.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_thresholds: Option<SubscriptionBillingThresholds>,
 
@@ -265,30 +218,37 @@ pub struct CreateSubscriptionSchedule<'a> {
     ///
     /// When charging automatically, Stripe will attempt to pay the underlying subscription at the end of each billing cycle using the default source attached to the customer.
     /// When sending an invoice, Stripe will email your customer an invoice with payment instructions.
-    /// Defaults to `charge_automatically` on creation.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub collection_method: Option<CollectionMethod>,
+    pub collection_method: Option<SubscriptionSchedulesResourceDefaultSettingsCollectionMethod>,
 
+    /// ID of the default payment method for the subscription schedule.
+    ///
+    /// If not set, invoices will use the default payment method in the customer's invoice settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_payment_method: Option<Expandable<PaymentMethod>>,
+
+    /// The subscription schedule's default invoice settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invoice_settings: Option<SubscriptionScheduleInvoiceSettings>,
+}
+
+/// The parameters for `SubscriptionSchedule::create`.
+#[derive(Clone, Debug, Serialize, Default)]
+pub struct CreateSubscriptionSchedule<'a> {
     /// The identifier of the customer to create the subscription schedule for.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub customer: Option<CustomerId>,
 
-    /// ID of the default payment method for the subscription schedule.
-    ///
-    /// It must belong to the customer associated with the subscription schedule.
-    /// If not set, invoices will use the default payment method in the customer's invoice settings.
+    /// Object representing the subscription schedule's default settings.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub default_payment_method: Option<&'a str>,
+    pub default_settings: Option<CreateSubscriptionScheduleDefaultSettings>,
 
-    /// ID of the default payment source for the subscription schedule.
+    /// Configures how the subscription schedule behaves when it ends.
     ///
-    /// It must belong to the customer associated with the subscription schedule and be in a chargeable state.
-    /// If not set, defaults to the customer's default source.
+    /// Possible values are `release` or `cancel` with the default being `release`.
+    /// `release` will end the subscription schedule and keep the underlying subscription running.`cancel` will end the subscription schedule and cancel the underlying subscription.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub default_source: Option<&'a str>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_behavior: Option<SubscriptionScheduleRenewalBehavior>,
+    pub end_behavior: Option<SubscriptionScheduleEndBehavior>,
 
     /// Specifies which fields in the response should be expanded.
     #[serde(skip_serializing_if = "Expand::is_empty")]
@@ -300,10 +260,6 @@ pub struct CreateSubscriptionSchedule<'a> {
     /// Other parameters cannot be set since their values will be inferred from the subscription.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from_subscription: Option<&'a str>,
-
-    /// All invoices will be billed using the specified settings.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub invoice_settings: Option<SubscriptionScheduleInvoiceSettings>,
 
     /// Set of key-value pairs that you can attach to an object.
     ///
@@ -318,23 +274,6 @@ pub struct CreateSubscriptionSchedule<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phases: Option<Vec<CreateSubscriptionSchedulePhases>>,
 
-    /// Configures how the subscription schedule behaves when it ends.
-    ///
-    /// Possible values are `none`, `cancel`, `renew`, or `release`.
-    /// `renew` will create a new subscription schedule revision by adding a new phase using the most recent phase's `plans` applied to a duration set by `renewal_interval`.
-    /// `none` will stop the subscription schedule and cancel the underlying subscription.
-    /// `cancel` is semantically the same as `none`.
-    /// `release` will stop the subscription schedule, but keep the underlying subscription running.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub renewal_behavior: Option<SubscriptionScheduleRenewalBehavior>,
-
-    /// Configuration for renewing the subscription schedule when it ends.
-    ///
-    /// Must be set if `renewal_behavior` is `renew`.
-    /// Otherwise, must not be set.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub renewal_interval: Option<SubscriptionScheduleRenewalIntervalParams>,
-
     /// The date at which the subscription schedule starts.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub start_date: Option<Scheduled>,
@@ -343,20 +282,13 @@ pub struct CreateSubscriptionSchedule<'a> {
 impl<'a> CreateSubscriptionSchedule<'a> {
     pub fn new() -> Self {
         CreateSubscriptionSchedule {
-            billing: Default::default(),
-            billing_thresholds: Default::default(),
-            collection_method: Default::default(),
             customer: Default::default(),
-            default_payment_method: Default::default(),
-            default_source: Default::default(),
+            default_settings: Default::default(),
             end_behavior: Default::default(),
             expand: Default::default(),
             from_subscription: Default::default(),
-            invoice_settings: Default::default(),
             metadata: Default::default(),
             phases: Default::default(),
-            renewal_behavior: Default::default(),
-            renewal_interval: Default::default(),
             start_date: Default::default(),
         }
     }
@@ -434,48 +366,20 @@ impl<'a> ListSubscriptionSchedules<'a> {
 /// The parameters for `SubscriptionSchedule::update`.
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct UpdateSubscriptionSchedule<'a> {
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
+    /// Object representing the subscription schedule's default settings.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
+    pub default_settings: Option<UpdateSubscriptionScheduleDefaultSettings>,
 
-    /// Define thresholds at which an invoice will be sent, and the subscription advanced to a new billing period.
+    /// Configures how the subscription schedule behaves when it ends.
     ///
-    /// Pass an empty string to remove previously-defined thresholds.
+    /// Possible values are `release` or `cancel` with the default being `release`.
+    /// `release` will end the subscription schedule and keep the underlying subscription running.`cancel` will end the subscription schedule and cancel the underlying subscription.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing_thresholds: Option<SubscriptionBillingThresholds>,
-
-    /// Either `charge_automatically`, or `send_invoice`.
-    ///
-    /// When charging automatically, Stripe will attempt to pay the underlying subscription at the end of each billing cycle using the default source attached to the customer.
-    /// When sending an invoice, Stripe will email your customer an invoice with payment instructions.
-    /// Defaults to `charge_automatically` on creation.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub collection_method: Option<CollectionMethod>,
-
-    /// ID of the default payment method for the subscription schedule.
-    ///
-    /// It must belong to the customer associated with the subscription schedule.
-    /// If not set, invoices will use the default payment method in the customer's invoice settings.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub default_payment_method: Option<&'a str>,
-
-    /// ID of the default payment source for the subscription schedule.
-    ///
-    /// It must belong to the customer associated with the subscription schedule and be in a chargeable state.
-    /// If not set, defaults to the customer's default source.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub default_source: Option<&'a str>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_behavior: Option<SubscriptionScheduleRenewalBehavior>,
+    pub end_behavior: Option<SubscriptionScheduleEndBehavior>,
 
     /// Specifies which fields in the response should be expanded.
     #[serde(skip_serializing_if = "Expand::is_empty")]
     pub expand: &'a [&'a str],
-
-    /// All invoices will be billed using the specified settings.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub invoice_settings: Option<SubscriptionScheduleInvoiceSettings>,
 
     /// Set of key-value pairs that you can attach to an object.
     ///
@@ -496,43 +400,34 @@ pub struct UpdateSubscriptionSchedule<'a> {
     /// Defaults to `true`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prorate: Option<bool>,
-
-    /// Configures how the subscription schedule behaves when it ends.
-    ///
-    /// Possible values are `none`, `cancel`, `renew`, or `release`.
-    /// `renew` will create a new subscription schedule revision by adding a new phase using the most recent phase's `plans` applied to a duration set by `renewal_interval`.
-    /// `none` will stop the subscription schedule and cancel the underlying subscription.
-    /// `cancel` is semantically the same as `none`.
-    /// `release` will stop the subscription schedule, but keep the underlying subscription running.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub renewal_behavior: Option<SubscriptionScheduleRenewalBehavior>,
-
-    /// Configuration for renewing the subscription schedule when it ends.
-    ///
-    /// Must be set if `renewal_behavior` is `renew`.
-    /// Otherwise, must not be set.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub renewal_interval: Option<SubscriptionScheduleRenewalIntervalParams>,
 }
 
 impl<'a> UpdateSubscriptionSchedule<'a> {
     pub fn new() -> Self {
         UpdateSubscriptionSchedule {
-            billing: Default::default(),
-            billing_thresholds: Default::default(),
-            collection_method: Default::default(),
-            default_payment_method: Default::default(),
-            default_source: Default::default(),
+            default_settings: Default::default(),
             end_behavior: Default::default(),
             expand: Default::default(),
-            invoice_settings: Default::default(),
             metadata: Default::default(),
             phases: Default::default(),
             prorate: Default::default(),
-            renewal_behavior: Default::default(),
-            renewal_interval: Default::default(),
         }
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CreateSubscriptionScheduleDefaultSettings {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub billing_thresholds: Option<CreateSubscriptionScheduleDefaultSettingsBillingThresholds>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub collection_method: Option<CreateSubscriptionScheduleDefaultSettingsCollectionMethod>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_payment_method: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invoice_settings: Option<CreateSubscriptionScheduleDefaultSettingsInvoiceSettings>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -577,16 +472,18 @@ pub struct CreateSubscriptionSchedulePhases {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SubscriptionScheduleInvoiceSettings {
+pub struct UpdateSubscriptionScheduleDefaultSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub days_until_due: Option<u32>,
-}
+    pub billing_thresholds: Option<UpdateSubscriptionScheduleDefaultSettingsBillingThresholds>,
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SubscriptionScheduleRenewalIntervalParams {
-    pub interval: PlanInterval,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub collection_method: Option<UpdateSubscriptionScheduleDefaultSettingsCollectionMethod>,
 
-    pub length: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_payment_method: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invoice_settings: Option<UpdateSubscriptionScheduleDefaultSettingsInvoiceSettings>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -634,6 +531,27 @@ pub struct UpdateSubscriptionSchedulePhases {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CreateSubscriptionScheduleDefaultSettingsBillingThresholds {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub amount_gte: Option<i64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reset_billing_cycle_anchor: Option<bool>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CreateSubscriptionScheduleDefaultSettingsInvoiceSettings {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub days_until_due: Option<u32>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SubscriptionScheduleInvoiceSettings {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub days_until_due: Option<u32>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SubscriptionSchedulePhasesPlansParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_thresholds: Option<SubscriptionItemBillingThresholds>,
@@ -647,19 +565,71 @@ pub struct SubscriptionSchedulePhasesPlansParams {
     pub tax_rates: Option<Vec<String>>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UpdateSubscriptionScheduleDefaultSettingsBillingThresholds {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub amount_gte: Option<i64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reset_billing_cycle_anchor: Option<bool>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UpdateSubscriptionScheduleDefaultSettingsInvoiceSettings {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub days_until_due: Option<u32>,
+}
+
+/// An enum representing the possible values of an `CreateSubscriptionScheduleDefaultSettings`'s `collection_method` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum CreateSubscriptionScheduleDefaultSettingsCollectionMethod {
+    ChargeAutomatically,
+    SendInvoice,
+}
+
+impl CreateSubscriptionScheduleDefaultSettingsCollectionMethod {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CreateSubscriptionScheduleDefaultSettingsCollectionMethod::ChargeAutomatically => {
+                "charge_automatically"
+            }
+            CreateSubscriptionScheduleDefaultSettingsCollectionMethod::SendInvoice => {
+                "send_invoice"
+            }
+        }
+    }
+}
+
+impl AsRef<str> for CreateSubscriptionScheduleDefaultSettingsCollectionMethod {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for CreateSubscriptionScheduleDefaultSettingsCollectionMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
 /// An enum representing the possible values of an `SubscriptionSchedule`'s `end_behavior` field.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubscriptionScheduleEndBehavior {
     Cancel,
+    None,
     Release,
+    Renew,
 }
 
 impl SubscriptionScheduleEndBehavior {
     pub fn as_str(self) -> &'static str {
         match self {
             SubscriptionScheduleEndBehavior::Cancel => "cancel",
+            SubscriptionScheduleEndBehavior::None => "none",
             SubscriptionScheduleEndBehavior::Release => "release",
+            SubscriptionScheduleEndBehavior::Renew => "renew",
         }
     }
 }
@@ -671,39 +641,6 @@ impl AsRef<str> for SubscriptionScheduleEndBehavior {
 }
 
 impl std::fmt::Display for SubscriptionScheduleEndBehavior {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.as_str().fmt(f)
-    }
-}
-
-/// An enum representing the possible values of an `SubscriptionSchedule`'s `renewal_behavior` field.
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum SubscriptionScheduleRenewalBehavior {
-    Cancel,
-    None,
-    Release,
-    Renew,
-}
-
-impl SubscriptionScheduleRenewalBehavior {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            SubscriptionScheduleRenewalBehavior::Cancel => "cancel",
-            SubscriptionScheduleRenewalBehavior::None => "none",
-            SubscriptionScheduleRenewalBehavior::Release => "release",
-            SubscriptionScheduleRenewalBehavior::Renew => "renew",
-        }
-    }
-}
-
-impl AsRef<str> for SubscriptionScheduleRenewalBehavior {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-impl std::fmt::Display for SubscriptionScheduleRenewalBehavior {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         self.as_str().fmt(f)
     }
@@ -739,6 +676,72 @@ impl AsRef<str> for SubscriptionScheduleStatus {
 }
 
 impl std::fmt::Display for SubscriptionScheduleStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// An enum representing the possible values of an `SubscriptionSchedulesResourceDefaultSettings`'s `collection_method` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum SubscriptionSchedulesResourceDefaultSettingsCollectionMethod {
+    ChargeAutomatically,
+    SendInvoice,
+}
+
+impl SubscriptionSchedulesResourceDefaultSettingsCollectionMethod {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            SubscriptionSchedulesResourceDefaultSettingsCollectionMethod::ChargeAutomatically => {
+                "charge_automatically"
+            }
+            SubscriptionSchedulesResourceDefaultSettingsCollectionMethod::SendInvoice => {
+                "send_invoice"
+            }
+        }
+    }
+}
+
+impl AsRef<str> for SubscriptionSchedulesResourceDefaultSettingsCollectionMethod {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for SubscriptionSchedulesResourceDefaultSettingsCollectionMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// An enum representing the possible values of an `UpdateSubscriptionScheduleDefaultSettings`'s `collection_method` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum UpdateSubscriptionScheduleDefaultSettingsCollectionMethod {
+    ChargeAutomatically,
+    SendInvoice,
+}
+
+impl UpdateSubscriptionScheduleDefaultSettingsCollectionMethod {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            UpdateSubscriptionScheduleDefaultSettingsCollectionMethod::ChargeAutomatically => {
+                "charge_automatically"
+            }
+            UpdateSubscriptionScheduleDefaultSettingsCollectionMethod::SendInvoice => {
+                "send_invoice"
+            }
+        }
+    }
+}
+
+impl AsRef<str> for UpdateSubscriptionScheduleDefaultSettingsCollectionMethod {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for UpdateSubscriptionScheduleDefaultSettingsCollectionMethod {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         self.as_str().fmt(f)
     }

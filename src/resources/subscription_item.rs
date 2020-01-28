@@ -216,6 +216,7 @@ impl<'a> UpdateSubscriptionItem<'a> {
 pub enum SubscriptionItemPaymentBehavior {
     AllowIncomplete,
     ErrorIfIncomplete,
+    PendingIfIncomplete,
 }
 
 impl SubscriptionItemPaymentBehavior {
@@ -223,6 +224,7 @@ impl SubscriptionItemPaymentBehavior {
         match self {
             SubscriptionItemPaymentBehavior::AllowIncomplete => "allow_incomplete",
             SubscriptionItemPaymentBehavior::ErrorIfIncomplete => "error_if_incomplete",
+            SubscriptionItemPaymentBehavior::PendingIfIncomplete => "pending_if_incomplete",
         }
     }
 }

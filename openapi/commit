@@ -53,6 +53,7 @@
 ./openapi/add subscription_schedule
 #./openapi/add subscription_schedule_revision
 ./openapi/add topup
+./openapi/add tax_deducted_at_source
 ./openapi/add tax_id
 ./openapi/add tax_rate
 ./openapi/add token
