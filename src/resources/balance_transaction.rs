@@ -8,8 +8,8 @@ use crate::params::{Expand, Expandable, List, Object, RangeQuery, Timestamp};
 use crate::resources::{
     ApplicationFee, ApplicationFeeRefund, BalanceTransactionStatus, Charge,
     ConnectCollectionTransfer, Currency, Dispute, FeeType, IssuingAuthorization,
-    IssuingTransaction, Payout, PlatformTaxFee, Refund, ReserveTransaction, Topup, Transfer,
-    TransferReversal,
+    IssuingTransaction, Payout, PlatformTaxFee, Refund, ReserveTransaction, TaxDeductedAtSource,
+    Topup, Transfer, TransferReversal,
 };
 use serde_derive::{Deserialize, Serialize};
 
@@ -214,6 +214,7 @@ pub enum BalanceTransactionSource {
     PlatformTaxFee(PlatformTaxFee),
     Refund(Refund),
     ReserveTransaction(ReserveTransaction),
+    TaxDeductedAtSource(TaxDeductedAtSource),
     Topup(Topup),
     Transfer(Transfer),
     TransferReversal(TransferReversal),

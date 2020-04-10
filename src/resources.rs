@@ -24,6 +24,7 @@ mod product;
 mod refund;
 mod reserve_transaction;
 mod setup_intent;
+mod tax_deducted_at_source;
 mod token;
 mod token_ext;
 pub use self::balance::*;
@@ -45,6 +46,7 @@ pub use self::product::*;
 pub use self::refund::*;
 pub use self::reserve_transaction::*;
 pub use self::setup_intent::*;
+pub use self::tax_deducted_at_source::*;
 pub use self::token::*;
 pub use self::token_ext::*;
 

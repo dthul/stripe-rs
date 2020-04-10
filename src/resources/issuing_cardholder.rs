@@ -47,7 +47,9 @@ pub struct IssuingCardholder {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phone_number: Option<String>,
 
-    /// One of `active`, `inactive`, `blocked`, or `pending`.
+    pub requirements: IssuingCardholderRequirements,
+
+    /// One of `active`, `inactive`, or `blocked`.
     pub status: IssuingCardholderStatus,
 
     /// One of `individual` or `business_entity`.
@@ -90,6 +92,96 @@ pub struct IssuingCardholderAuthorizationControls {
     /// Currency for the amounts within spending_limits.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub spending_limits_currency: Option<Currency>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct IssuingCardholderRequirements {
+    /// If the cardholder is disabled, this string describes why.
+    ///
+    /// Can be one of `listed`, `rejected.listed`, or `under_review`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disabled_reason: Option<IssuingCardholderRequirementsDisabledReason>,
+
+    /// If not empty, this field contains the list of fields that need to be collected in order to verify and re-enabled the cardholder.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub past_due: Option<Vec<IssuingCardholderRequirementsPastDue>>,
+}
+
+/// An enum representing the possible values of an `IssuingCardholderRequirements`'s `disabled_reason` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum IssuingCardholderRequirementsDisabledReason {
+    Listed,
+    #[serde(rename = "rejected.listed")]
+    RejectedListed,
+    UnderReview,
+}
+
+impl IssuingCardholderRequirementsDisabledReason {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            IssuingCardholderRequirementsDisabledReason::Listed => "listed",
+            IssuingCardholderRequirementsDisabledReason::RejectedListed => "rejected.listed",
+            IssuingCardholderRequirementsDisabledReason::UnderReview => "under_review",
+        }
+    }
+}
+
+impl AsRef<str> for IssuingCardholderRequirementsDisabledReason {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for IssuingCardholderRequirementsDisabledReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// An enum representing the possible values of an `IssuingCardholderRequirements`'s `past_due` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum IssuingCardholderRequirementsPastDue {
+    #[serde(rename = "individual.dob.day")]
+    IndividualDobDay,
+    #[serde(rename = "individual.dob.month")]
+    IndividualDobMonth,
+    #[serde(rename = "individual.dob.year")]
+    IndividualDobYear,
+    #[serde(rename = "individual.first_name")]
+    IndividualFirstName,
+    #[serde(rename = "individual.last_name")]
+    IndividualLastName,
+    #[serde(rename = "individual.verification.document")]
+    IndividualVerificationDocument,
+}
+
+impl IssuingCardholderRequirementsPastDue {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            IssuingCardholderRequirementsPastDue::IndividualDobDay => "individual.dob.day",
+            IssuingCardholderRequirementsPastDue::IndividualDobMonth => "individual.dob.month",
+            IssuingCardholderRequirementsPastDue::IndividualDobYear => "individual.dob.year",
+            IssuingCardholderRequirementsPastDue::IndividualFirstName => "individual.first_name",
+            IssuingCardholderRequirementsPastDue::IndividualLastName => "individual.last_name",
+            IssuingCardholderRequirementsPastDue::IndividualVerificationDocument => {
+                "individual.verification.document"
+            }
+        }
+    }
+}
+
+impl AsRef<str> for IssuingCardholderRequirementsPastDue {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for IssuingCardholderRequirementsPastDue {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
 }
 
 /// An enum representing the possible values of an `IssuingCardholder`'s `status` field.

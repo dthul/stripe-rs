@@ -315,10 +315,10 @@ pub struct CreatePaymentMethod<'a> {
     ///
     /// An additional hash is included on the PaymentMethod with a name matching this value.
     /// It contains additional information specific to the PaymentMethod type.
-    /// Required unless `payment_method` is specified (see the [Shared PaymentMethods](https://stripe.com/docs/payments/payment-methods/connect#shared-payment-methods) guide).
+    /// Required unless `payment_method` is specified (see the [Cloning PaymentMethods](https://stripe.com/docs/payments/payment-methods/connect#cloning-payment-methods) guide).
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub type_: Option<PaymentMethodType>,
+    pub type_: Option<PaymentMethodTypeFilter>,
 }
 
 impl<'a> CreatePaymentMethod<'a> {
@@ -434,6 +434,33 @@ impl AsRef<str> for PaymentMethodType {
 }
 
 impl std::fmt::Display for PaymentMethodType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// An enum representing the possible values of an `CreatePaymentMethod`'s `type_` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum PaymentMethodTypeFilter {
+    Card,
+}
+
+impl PaymentMethodTypeFilter {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            PaymentMethodTypeFilter::Card => "card",
+        }
+    }
+}
+
+impl AsRef<str> for PaymentMethodTypeFilter {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for PaymentMethodTypeFilter {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         self.as_str().fmt(f)
     }

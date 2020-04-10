@@ -66,10 +66,6 @@ pub struct Invoice {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_advance: Option<bool>,
 
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
-
     /// Indicates the reason why the invoice was created.
     ///
     /// `subscription_cycle` indicates an invoice created by a subscription advancing into a new period.
@@ -420,7 +416,7 @@ pub struct InvoiceItemThresholdReason {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct InvoicesResourceInvoiceTaxId {
-    /// The type of the tax ID, one of `au_abn`, `eu_vat`, `in_gst`, `no_vat`, `nz_gst`, or `unknown`.
+    /// The type of the tax ID, one of `au_abn`, `ch_vat`, `eu_vat`, `in_gst`, `mx_rfc`, `no_vat`, `nz_gst`, `unknown`, or `za_vat`.
     #[serde(rename = "type")]
     pub type_: InvoicesResourceInvoiceTaxIdType,
 
@@ -463,10 +459,6 @@ pub struct CreateInvoice<'a> {
     /// When `false`, the invoice's state will not automatically advance without an explicit action.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_advance: Option<bool>,
-
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
 
     /// Either `charge_automatically`, or `send_invoice`.
     ///
@@ -553,7 +545,6 @@ impl<'a> CreateInvoice<'a> {
         CreateInvoice {
             application_fee_amount: Default::default(),
             auto_advance: Default::default(),
-            billing: Default::default(),
             collection_method: Default::default(),
             custom_fields: Default::default(),
             customer,
@@ -576,10 +567,6 @@ impl<'a> CreateInvoice<'a> {
 /// The parameters for `Invoice::list`.
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct ListInvoices<'a> {
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
-
     /// The collection method of the invoice to retrieve.
     ///
     /// Either `charge_automatically` or `send_invoice`.
@@ -634,7 +621,6 @@ pub struct ListInvoices<'a> {
 impl<'a> ListInvoices<'a> {
     pub fn new() -> Self {
         ListInvoices {
-            billing: Default::default(),
             collection_method: Default::default(),
             created: Default::default(),
             customer: Default::default(),
@@ -829,22 +815,28 @@ impl std::fmt::Display for InvoiceStatusFilter {
 #[serde(rename_all = "snake_case")]
 pub enum InvoicesResourceInvoiceTaxIdType {
     AuAbn,
+    ChVat,
     EuVat,
     InGst,
+    MxRfc,
     NoVat,
     NzGst,
     Unknown,
+    ZaVat,
 }
 
 impl InvoicesResourceInvoiceTaxIdType {
     pub fn as_str(self) -> &'static str {
         match self {
             InvoicesResourceInvoiceTaxIdType::AuAbn => "au_abn",
+            InvoicesResourceInvoiceTaxIdType::ChVat => "ch_vat",
             InvoicesResourceInvoiceTaxIdType::EuVat => "eu_vat",
             InvoicesResourceInvoiceTaxIdType::InGst => "in_gst",
+            InvoicesResourceInvoiceTaxIdType::MxRfc => "mx_rfc",
             InvoicesResourceInvoiceTaxIdType::NoVat => "no_vat",
             InvoicesResourceInvoiceTaxIdType::NzGst => "nz_gst",
             InvoicesResourceInvoiceTaxIdType::Unknown => "unknown",
+            InvoicesResourceInvoiceTaxIdType::ZaVat => "za_vat",
         }
     }
 }

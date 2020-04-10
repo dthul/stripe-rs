@@ -30,8 +30,10 @@ pub struct CheckoutSession {
     pub client_reference_id: Option<String>,
 
     /// The ID of the customer for this session.
-    ///
-    /// A new customer will be created unless an existing customer was provided in when the session was created.
+    /// For Checkout Sessions in `payment` or `subscription` mode, Checkout
+    /// will create a new customer object based on information provided
+    /// during the session unless an existing customer was provided when
+    /// the session was created.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub customer: Option<Expandable<Customer>>,
 
@@ -61,7 +63,7 @@ pub struct CheckoutSession {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<CheckoutSessionMode>,
 
-    /// The ID of the PaymentIntent for `payment` mode.
+    /// The ID of the PaymentIntent for Checkout Sessions in `payment` mode.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payment_intent: Option<Expandable<PaymentIntent>>,
 
@@ -70,20 +72,18 @@ pub struct CheckoutSession {
     /// card) this Checkout Session is allowed to accept.
     pub payment_method_types: Vec<String>,
 
-    /// The ID of the SetupIntent if mode was set to `setup`.
+    /// The ID of the SetupIntent for Checkout Sessions in `setup` mode.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub setup_intent: Option<Expandable<SetupIntent>>,
 
-    /// Describes the type of transaction being performed by Checkout in order
-    /// to customize relevant text on the page, such as the submit button.
-    /// `submit_type` can only be specified on Checkout Sessions using line
-    /// items or a SKU, but not Checkout Sessions for subscriptions.
+    /// Describes the type of transaction being performed by Checkout in order to customize
+    /// relevant text on the page, such as the submit button.
     ///
-    /// Supported values are `auto`, `book`, `donate`, or `pay`.
+    /// `submit_type` can only be specified on Checkout Sessions in `payment` mode, but not Checkout Sessions in `subscription` or `setup` mode. Supported values are `auto`, `book`, `donate`, or `pay`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub submit_type: Option<CheckoutSessionSubmitType>,
 
-    /// The ID of the subscription created if one or more plans were provided.
+    /// The ID of the subscription for Checkout Sessions in `subscription` mode.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription: Option<Expandable<Subscription>>,
 

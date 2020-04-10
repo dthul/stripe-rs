@@ -3,7 +3,7 @@
 // ======================================
 
 use crate::config::{Client, Response};
-use crate::ids::DisputeId;
+use crate::ids::{ChargeId, DisputeId};
 use crate::params::{Expand, Expandable, List, Metadata, Object, RangeQuery, Timestamp};
 use crate::resources::{BalanceTransaction, Charge, Currency, File};
 use serde_derive::{Deserialize, Serialize};
@@ -242,6 +242,10 @@ pub struct DisputeEvidenceDetails {
 /// The parameters for `Dispute::list`.
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct ListDisputes<'a> {
+    /// Only return disputes that are associated by the Charge specified by this Charge ID.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub charge: Option<ChargeId>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub created: Option<RangeQuery<Timestamp>>,
 
@@ -273,6 +277,7 @@ pub struct ListDisputes<'a> {
 impl<'a> ListDisputes<'a> {
     pub fn new() -> Self {
         ListDisputes {
+            charge: Default::default(),
             created: Default::default(),
             ending_before: Default::default(),
             expand: Default::default(),

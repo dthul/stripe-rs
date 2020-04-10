@@ -73,7 +73,7 @@ pub struct IssuingCard {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shipping: Option<IssuingCardShipping>,
 
-    /// One of `active`, `inactive`, `canceled`, `lost`, `stolen`, or `pending`.
+    /// One of `active`, `inactive`, `canceled`, `lost`, or `stolen`.
     pub status: IssuingCardStatus,
 
     /// One of `virtual` or `physical`.
@@ -106,12 +106,6 @@ pub struct IssuingCardAuthorizationControls {
     /// See [max_amount](https://stripe.com/docs/api#issuing_card_object-authorization_controls-max_amount).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub currency: Option<Currency>,
-
-    /// Maximum amount allowed per authorization on this card, in the currency of the card.
-    ///
-    /// Authorization amounts in a different currency will be converted to the card's currency when evaluating this control.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_amount: Option<i64>,
 
     /// Maximum count of approved authorizations on this card.
     ///

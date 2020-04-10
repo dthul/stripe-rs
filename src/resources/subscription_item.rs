@@ -129,6 +129,9 @@ pub struct CreateSubscriptionItem<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub payment_behavior: Option<SubscriptionItemPaymentBehavior>,
+
     /// The identifier of the plan to add to the subscription.
     pub plan: PlanId,
 
@@ -162,6 +165,7 @@ impl<'a> CreateSubscriptionItem<'a> {
             billing_thresholds: Default::default(),
             expand: Default::default(),
             metadata: Default::default(),
+            payment_behavior: Default::default(),
             plan,
             prorate: Default::default(),
             proration_date: Default::default(),
@@ -285,12 +289,13 @@ pub struct CreateSubscriptionItemBillingThresholds {
     pub usage_gte: i64,
 }
 
-/// An enum representing the possible values of an `UpdateSubscriptionItem`'s `payment_behavior` field.
+/// An enum representing the possible values of an `CreateSubscriptionItem`'s `payment_behavior` field.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubscriptionItemPaymentBehavior {
     AllowIncomplete,
     ErrorIfIncomplete,
+    PendingIfIncomplete,
 }
 
 impl SubscriptionItemPaymentBehavior {
@@ -298,6 +303,7 @@ impl SubscriptionItemPaymentBehavior {
         match self {
             SubscriptionItemPaymentBehavior::AllowIncomplete => "allow_incomplete",
             SubscriptionItemPaymentBehavior::ErrorIfIncomplete => "error_if_incomplete",
+            SubscriptionItemPaymentBehavior::PendingIfIncomplete => "pending_if_incomplete",
         }
     }
 }

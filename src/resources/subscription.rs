@@ -26,10 +26,6 @@ pub struct Subscription {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub application_fee_percent: Option<f64>,
 
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
-
     /// Determines the date of the first full invoice, and, for plans with `month` or `year` intervals, the day of the month for subsequent invoices.
     pub billing_cycle_anchor: Timestamp,
 
@@ -111,6 +107,8 @@ pub struct Subscription {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ended_at: Option<Timestamp>,
 
+    pub invoice_customer_balance_settings: SubscriptionInvoiceCustomerBalanceSettings,
+
     /// List of subscription items, each with an attached plan.
     pub items: List<SubscriptionItem>,
 
@@ -125,6 +123,16 @@ pub struct Subscription {
     ///
     /// This can be useful for storing additional information about the object in a structured format.
     pub metadata: Metadata,
+
+    /// Specifies the approximate timestamp on which any pending invoice items will be billed according to the schedule provided at `pending_invoice_item_interval`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_pending_invoice_item_invoice: Option<Timestamp>,
+
+    /// Specifies an interval for how often to bill for any pending invoice items.
+    ///
+    /// It is analogous to calling [Create an invoice](https://stripe.com/docs/api#create_invoice) for the given subscription at the specified interval.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pending_invoice_item_interval: Option<SubscriptionPendingInvoiceItemInterval>,
 
     /// You can use this [SetupIntent](https://stripe.com/docs/api/setup_intents) to collect user authentication when creating a subscription without immediate payment or updating a subscription's payment method, allowing you to optimize for off-session payments.
     ///
@@ -148,11 +156,6 @@ pub struct Subscription {
     /// The schedule attached to the subscription.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schedule: Option<Expandable<SubscriptionSchedule>>,
-
-    /// Date of the last substantial change to this subscription.
-    ///
-    /// For example, a change to the items array, or a change of status, will reset this timestamp.
-    pub start: Timestamp,
 
     /// Date when the subscription was first created.
     ///
@@ -243,13 +246,33 @@ impl Object for Subscription {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SubscriptionInvoiceCustomerBalanceSettings {
+    /// Controls whether a customer balance applied to this invoice should be consumed and not credited or debited back to the customer if voided.
+    pub consume_applied_balance_on_void: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SubscriptionPendingInvoiceItemInterval {
+    /// Specifies invoicing frequency.
+    ///
+    /// Either `day`, `week`, `month` or `year`.
+    pub interval: SubscriptionPendingInvoiceItemIntervalInterval,
+
+    /// The number of intervals between invoices.
+    ///
+    /// For example, `interval=month` and `interval_count=3` bills every 3 months.
+    /// Maximum of one year interval allowed (1 year, 12 months, or 52 weeks).
+    pub interval_count: u64,
+}
+
 /// The parameters for `Subscription::create`.
 #[derive(Clone, Debug, Serialize)]
 pub struct CreateSubscription<'a> {
     /// A non-negative decimal between 0 and 100, with at most two decimal places.
     ///
     /// This represents the percentage of the subscription invoice subtotal that will be transferred to the application owner's Stripe account.
-    /// The request must be made with an OAuth key in order to set an application fee percentage.
+    /// The request must be made by a platform account on a connected account in order to set an application fee percentage.
     /// For more information, see the application fees [documentation](https://stripe.com/docs/connect/subscriptions#collecting-fees-on-subscriptions).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub application_fee_percent: Option<f64>,
@@ -260,10 +283,6 @@ pub struct CreateSubscription<'a> {
     /// Can be combined with trials and the billing cycle anchor.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub backdate_start_date: Option<Timestamp>,
-
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
 
     /// A future timestamp to anchor the subscription's [billing cycle](https://stripe.com/docs/subscriptions/billing-cycle).
     ///
@@ -334,6 +353,10 @@ pub struct CreateSubscription<'a> {
     #[serde(skip_serializing_if = "Expand::is_empty")]
     pub expand: &'a [&'a str],
 
+    /// Controls whether a customer balance applied to an invoice should be consumed and not credited or debited back to the customer if voided by this subscription.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invoice_customer_balance_settings: Option<CreateSubscriptionInvoiceCustomerBalanceSettings>,
+
     /// List of subscription items, each with an attached plan.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<CreateSubscriptionItems>>,
@@ -360,6 +383,12 @@ pub struct CreateSubscription<'a> {
     /// See the [changelog](https://stripe.com/docs/upgrades#2019-03-14) to learn more.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payment_behavior: Option<SubscriptionPaymentBehavior>,
+
+    /// Specifies an interval for how often to bill for any pending invoice items.
+    ///
+    /// It is analogous to calling [Create an invoice](https://stripe.com/docs/api#create_invoice) for the given subscription at the specified interval.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pending_invoice_item_interval: Option<CreateSubscriptionPendingInvoiceItemInterval>,
 
     /// Boolean (defaults to `true`) telling us whether to [credit for unused time](https://stripe.com/docs/subscriptions/billing-cycle#prorations) when the billing cycle changes (e.g.
     ///
@@ -405,7 +434,6 @@ impl<'a> CreateSubscription<'a> {
         CreateSubscription {
             application_fee_percent: Default::default(),
             backdate_start_date: Default::default(),
-            billing: Default::default(),
             billing_cycle_anchor: Default::default(),
             billing_thresholds: Default::default(),
             cancel_at: Default::default(),
@@ -418,10 +446,12 @@ impl<'a> CreateSubscription<'a> {
             default_source: Default::default(),
             default_tax_rates: Default::default(),
             expand: Default::default(),
+            invoice_customer_balance_settings: Default::default(),
             items: Default::default(),
             metadata: Default::default(),
             off_session: Default::default(),
             payment_behavior: Default::default(),
+            pending_invoice_item_interval: Default::default(),
             prorate: Default::default(),
             tax_percent: Default::default(),
             trial_end: Default::default(),
@@ -434,10 +464,6 @@ impl<'a> CreateSubscription<'a> {
 /// The parameters for `Subscription::list`.
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct ListSubscriptions<'a> {
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
-
     /// The collection method of the subscriptions to retrieve.
     ///
     /// Either `charge_automatically` or `send_invoice`.
@@ -497,7 +523,6 @@ pub struct ListSubscriptions<'a> {
 impl<'a> ListSubscriptions<'a> {
     pub fn new() -> Self {
         ListSubscriptions {
-            billing: Default::default(),
             collection_method: Default::default(),
             created: Default::default(),
             current_period_end: Default::default(),
@@ -519,14 +544,10 @@ pub struct UpdateSubscription<'a> {
     /// A non-negative decimal between 0 and 100, with at most two decimal places.
     ///
     /// This represents the percentage of the subscription invoice subtotal that will be transferred to the application owner's Stripe account.
-    /// The request must be made with an OAuth key in order to set an application fee percentage.
+    /// The request must be made by a platform account on a connected account in order to set an application fee percentage.
     /// For more information, see the application fees [documentation](https://stripe.com/docs/connect/subscriptions#collecting-fees-on-subscriptions).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub application_fee_percent: Option<f64>,
-
-    /// This field has been renamed to `collection_method` and will be removed in a future API version.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub billing: Option<CollectionMethod>,
 
     /// Either `now` or `unchanged`.
     ///
@@ -595,6 +616,10 @@ pub struct UpdateSubscription<'a> {
     #[serde(skip_serializing_if = "Expand::is_empty")]
     pub expand: &'a [&'a str],
 
+    /// Controls whether a customer balance applied to an invoice should be consumed and not credited or debited back to the customer if voided by this subscription.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invoice_customer_balance_settings: Option<UpdateSubscriptionInvoiceCustomerBalanceSettings>,
+
     /// List of subscription items, each with an attached plan.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Vec<UpdateSubscriptionItems>>,
@@ -621,6 +646,12 @@ pub struct UpdateSubscription<'a> {
     /// See the [changelog](https://stripe.com/docs/upgrades#2019-03-14) to learn more.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payment_behavior: Option<SubscriptionPaymentBehavior>,
+
+    /// Specifies an interval for how often to bill for any pending invoice items.
+    ///
+    /// It is analogous to calling [Create an invoice](https://stripe.com/docs/api#create_invoice) for the given subscription at the specified interval.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pending_invoice_item_interval: Option<UpdateSubscriptionPendingInvoiceItemInterval>,
 
     /// Boolean (defaults to `true`) telling us whether to [credit for unused time](https://stripe.com/docs/subscriptions/billing-cycle#prorations) when the billing cycle changes (e.g.
     ///
@@ -666,7 +697,6 @@ impl<'a> UpdateSubscription<'a> {
     pub fn new() -> Self {
         UpdateSubscription {
             application_fee_percent: Default::default(),
-            billing: Default::default(),
             billing_cycle_anchor: Default::default(),
             billing_thresholds: Default::default(),
             cancel_at: Default::default(),
@@ -678,10 +708,12 @@ impl<'a> UpdateSubscription<'a> {
             default_source: Default::default(),
             default_tax_rates: Default::default(),
             expand: Default::default(),
+            invoice_customer_balance_settings: Default::default(),
             items: Default::default(),
             metadata: Default::default(),
             off_session: Default::default(),
             payment_behavior: Default::default(),
+            pending_invoice_item_interval: Default::default(),
             prorate: Default::default(),
             proration_date: Default::default(),
             tax_percent: Default::default(),
@@ -690,6 +722,9 @@ impl<'a> UpdateSubscription<'a> {
         }
     }
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CreateSubscriptionInvoiceCustomerBalanceSettings {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CreateSubscriptionItems {
@@ -707,6 +742,17 @@ pub struct CreateSubscriptionItems {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tax_rates: Option<Vec<String>>,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct CreateSubscriptionPendingInvoiceItemInterval {
+    pub interval: CreateSubscriptionPendingInvoiceItemIntervalInterval,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interval_count: Option<u64>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UpdateSubscriptionInvoiceCustomerBalanceSettings {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UpdateSubscriptionItems {
@@ -733,6 +779,47 @@ pub struct UpdateSubscriptionItems {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tax_rates: Option<Vec<String>>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UpdateSubscriptionPendingInvoiceItemInterval {
+    pub interval: UpdateSubscriptionPendingInvoiceItemIntervalInterval,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interval_count: Option<u64>,
+}
+
+/// An enum representing the possible values of an `CreateSubscriptionPendingInvoiceItemInterval`'s `interval` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum CreateSubscriptionPendingInvoiceItemIntervalInterval {
+    Day,
+    Month,
+    Week,
+    Year,
+}
+
+impl CreateSubscriptionPendingInvoiceItemIntervalInterval {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CreateSubscriptionPendingInvoiceItemIntervalInterval::Day => "day",
+            CreateSubscriptionPendingInvoiceItemIntervalInterval::Month => "month",
+            CreateSubscriptionPendingInvoiceItemIntervalInterval::Week => "week",
+            CreateSubscriptionPendingInvoiceItemIntervalInterval::Year => "year",
+        }
+    }
+}
+
+impl AsRef<str> for CreateSubscriptionPendingInvoiceItemIntervalInterval {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for CreateSubscriptionPendingInvoiceItemIntervalInterval {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
 }
 
 /// An enum representing the possible values of an `UpdateSubscription`'s `billing_cycle_anchor` field.
@@ -770,6 +857,7 @@ impl std::fmt::Display for SubscriptionBillingCycleAnchor {
 pub enum SubscriptionPaymentBehavior {
     AllowIncomplete,
     ErrorIfIncomplete,
+    PendingIfIncomplete,
 }
 
 impl SubscriptionPaymentBehavior {
@@ -777,6 +865,7 @@ impl SubscriptionPaymentBehavior {
         match self {
             SubscriptionPaymentBehavior::AllowIncomplete => "allow_incomplete",
             SubscriptionPaymentBehavior::ErrorIfIncomplete => "error_if_incomplete",
+            SubscriptionPaymentBehavior::PendingIfIncomplete => "pending_if_incomplete",
         }
     }
 }
@@ -788,6 +877,39 @@ impl AsRef<str> for SubscriptionPaymentBehavior {
 }
 
 impl std::fmt::Display for SubscriptionPaymentBehavior {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// An enum representing the possible values of an `SubscriptionPendingInvoiceItemInterval`'s `interval` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum SubscriptionPendingInvoiceItemIntervalInterval {
+    Day,
+    Month,
+    Week,
+    Year,
+}
+
+impl SubscriptionPendingInvoiceItemIntervalInterval {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            SubscriptionPendingInvoiceItemIntervalInterval::Day => "day",
+            SubscriptionPendingInvoiceItemIntervalInterval::Month => "month",
+            SubscriptionPendingInvoiceItemIntervalInterval::Week => "week",
+            SubscriptionPendingInvoiceItemIntervalInterval::Year => "year",
+        }
+    }
+}
+
+impl AsRef<str> for SubscriptionPendingInvoiceItemIntervalInterval {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for SubscriptionPendingInvoiceItemIntervalInterval {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         self.as_str().fmt(f)
     }
@@ -870,6 +992,39 @@ impl AsRef<str> for SubscriptionStatusFilter {
 }
 
 impl std::fmt::Display for SubscriptionStatusFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+/// An enum representing the possible values of an `UpdateSubscriptionPendingInvoiceItemInterval`'s `interval` field.
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum UpdateSubscriptionPendingInvoiceItemIntervalInterval {
+    Day,
+    Month,
+    Week,
+    Year,
+}
+
+impl UpdateSubscriptionPendingInvoiceItemIntervalInterval {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            UpdateSubscriptionPendingInvoiceItemIntervalInterval::Day => "day",
+            UpdateSubscriptionPendingInvoiceItemIntervalInterval::Month => "month",
+            UpdateSubscriptionPendingInvoiceItemIntervalInterval::Week => "week",
+            UpdateSubscriptionPendingInvoiceItemIntervalInterval::Year => "year",
+        }
+    }
+}
+
+impl AsRef<str> for UpdateSubscriptionPendingInvoiceItemIntervalInterval {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for UpdateSubscriptionPendingInvoiceItemIntervalInterval {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         self.as_str().fmt(f)
     }

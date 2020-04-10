@@ -50,7 +50,7 @@ pub struct IssuingDispute {
 
     /// Current status of dispute.
     ///
-    /// One of `unsubmitted`, `under_review`, `won`, or `lost`.
+    /// One of `lost`, `under_review`, `unsubmitted`, or `won`.
     pub status: IssuingDisputeStatus,
 }
 
